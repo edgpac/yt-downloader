@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YT Downloader</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-alt: #1a1a26;
+      --border: rgba(255,255,255,0.08);
+      --text: #f0f0f5;
+      --muted: #6b6b85;
+      --accent: #7c6af7;
+      --accent-hover: #9180ff;
+      --accent-glow: rgba(124,106,247,0.25);
+      --success: #22c55e;
+      --error: #ef4444;
+      --red: #ff4d4d;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 32px;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--red);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-icon svg { width: 18px; height: 18px; fill: white; }
+
+    .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.4px;
+    }
+
+    .logo-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .input-group {
+      position: relative;
+      margin-bottom: 14px;
+    }
+
+    .input-group input {
+      width: 100%;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 48px 14px 16px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .input-group input::placeholder { color: var(--muted); }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .input-clear {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s;
+    }
+
+    .input-clear:hover { color: var(--text); }
+    .input-clear.visible { display: flex; }
+
+    .options-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .select-wrap {
+      position: relative;
+    }
+
+    .select-wrap label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .select-wrap select {
+      width: 100%;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 34px 10px 12px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+      transition: border-color 0.15s;
+    }
+
+    .select-wrap select:focus { border-color: var(--accent); }
+
+    .select-arrow {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      pointer-events: none;
+      color: var(--muted);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px var(--accent-glow);
+    }
+
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+
+    .btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-download {
+      background: var(--success);
+      color: white;
+      box-shadow: 0 4px 20px rgba(34,197,94,0.25);
+      margin-top: 14px;
+      text-decoration: none;
+    }
+
+    .btn-download:hover {
+      background: #16a34a;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 28px rgba(34,197,94,0.35);
+    }
+
+    .spinner {
+      width: 18px;
+      height: 18px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-radius: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+
+    .status.info {
+      background: rgba(124,106,247,0.1);
+      border: 1px solid rgba(124,106,247,0.2);
+      color: #a89cff;
+    }
+
+    .status.success {
+      background: rgba(34,197,94,0.08);
+      border: 1px solid rgba(34,197,94,0.2);
+      color: #4ade80;
+    }
+
+    .status.error {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.2);
+      color: #f87171;
+    }
+
+    .status.visible { display: block; }
+
+    .result-filename {
+      font-weight: 600;
+      color: var(--text);
+      word-break: break-all;
+      margin-bottom: 4px;
+    }
+
+    .picker-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .picker-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .picker-item-label {
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .picker-item-link {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-decoration: none;
+      padding: 5px 12px;
+      border: 1px solid rgba(124,106,247,0.3);
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+
+    .picker-item-link:hover {
+      background: rgba(124,106,247,0.15);
+      color: var(--accent-hover);
+    }
+
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .footer a { color: var(--muted); text-decoration: underline; text-underline-offset: 2px; }
+    .footer a:hover { color: var(--text); }
+
+    @media (max-width: 480px) {
+      .card { padding: 28px 20px; border-radius: 16px; }
+      h1 { font-size: 22px; }
+      .options-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.85a8.27 8.27 0 0 0 4.84 1.55V6.95a4.85 4.85 0 0 1-1.07-.26z"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">YT Downloader</div>
+      <div class="logo-sub">Video &amp; audio · free · no login</div>
+    </div>
+  </div>
+
+  <h1>Download any video</h1>
+  <p class="subtitle">Paste a YouTube link and pick your quality. Works with Shorts too.</p>
+
+  <div class="input-group">
+    <input
+      type="url"
+      id="urlInput"
+      placeholder="https://youtube.com/watch?v=..."
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="input-clear" id="clearBtn" aria-label="Clear">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="options-row">
+    <div class="select-wrap">
+      <label for="modeSelect">Format</label>
+      <select id="modeSelect">
+        <option value="auto">Video + Audio (MP4)</option>
+        <option value="audio">Audio only (MP3)</option>
+        <option value="mute">Video only (muted)</option>
+      </select>
+      <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+
+    <div class="select-wrap">
+      <label for="qualitySelect">Quality</label>
+      <select id="qualitySelect">
+        <option value="1080">1080p HD</option>
+        <option value="720">720p</option>
+        <option value="480">480p</option>
+        <option value="360">360p</option>
+        <option value="max">Max available</option>
+      </select>
+      <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="downloadBtn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+    </svg>
+    Get download link
+  </button>
+
+  <div class="status" id="status"></div>
+  <div id="resultArea"></div>
+</div>
+
+<div class="footer">
+  Powered by <a href="https://cobalt.tools" target="_blank" rel="noopener">cobalt.tools</a> · for personal use only<br>
+  Respect copyright and YouTube's terms of service.
+</div>
+
+<script>
+  const urlInput    = document.getElementById('urlInput');
+  const clearBtn    = document.getElementById('clearBtn');
+  const modeSelect  = document.getElementById('modeSelect');
+  const qualitySelect = document.getElementById('qualitySelect');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const statusEl    = document.getElementById('status');
+  const resultArea  = document.getElementById('resultArea');
+
+  urlInput.addEventListener('input', () => {
+    clearBtn.classList.toggle('visible', urlInput.value.length > 0);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    urlInput.value = '';
+    clearBtn.classList.remove('visible');
+    urlInput.focus();
+    hideStatus();
+    resultArea.innerHTML = '';
+  });
+
+  function setStatus(type, html) {
+    statusEl.className = `status ${type} visible`;
+    statusEl.innerHTML = html;
+  }
+
+  function hideStatus() {
+    statusEl.className = 'status';
+    statusEl.innerHTML = '';
+  }
+
+  function setLoading(loading) {
+    if (loading) {
+      downloadBtn.disabled = true;
+      downloadBtn.innerHTML = '<div class="spinner"></div> Fetching link…';
+    } else {
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Get download link`;
+    }
+  }
+
+  function guessFilename(url, mode) {
+    const ext = mode === 'audio' ? 'mp3' : 'mp4';
+    try {
+      const u = new URL(url);
+      const v = u.searchParams.get('v') || 'video';
+      return `${v}.${ext}`;
+    } catch {
+      return `download.${ext}`;
+    }
+  }
+
+  function renderDownloadLink(url, label) {
+    return `<a class="btn btn-download" href="${url}" target="_blank" rel="noopener" download>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+      </svg>
+      ${label}
+    </a>`;
+  }
+
+  downloadBtn.addEventListener('click', async () => {
+    const rawUrl = urlInput.value.trim();
+    if (!rawUrl) {
+      urlInput.focus();
+      setStatus('error', 'Paste a YouTube URL first.');
+      return;
+    }
+
+    const youtubePattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)/;
+    if (!youtubePattern.test(rawUrl)) {
+      setStatus('error', 'That doesn\'t look like a YouTube URL. Paste a youtube.com or youtu.be link.');
+      return;
+    }
+
+    hideStatus();
+    resultArea.innerHTML = '';
+    setLoading(true);
+    setStatus('info', 'Contacting cobalt.tools…');
+
+    const mode = modeSelect.value;
+    const quality = qualitySelect.value;
+
+    const body = {
+      url: rawUrl,
+      downloadMode: mode,
+      filenameStyle: 'pretty',
+    };
+
+    if (mode !== 'audio') {
+      body.videoQuality = quality === 'max' ? '9999' : quality;
+    }
+
+    if (mode === 'audio') {
+      body.audioFormat = 'mp3';
+    }
+
+    try {
+      const res = await fetch('https://api.cobalt.tools/', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.status === 'error') {
+        const code = data?.error?.code ?? 'unknown_error';
+        const friendly = friendlyError(code);
+        setStatus('error', friendly);
+        setLoading(false);
+        return;
+      }
+
+      if (data.status === 'stream' || data.status === 'tunnel' || data.status === 'redirect') {
+        setStatus('success', 'Link ready! Click below to download.');
+        const filename = data.filename ?? guessFilename(rawUrl, mode);
+        resultArea.innerHTML = `
+          <div class="result-filename">${escHtml(filename)}</div>
+          ${renderDownloadLink(data.url, 'Download file')}
+        `;
+      } else if (data.status === 'picker') {
+        setStatus('success', 'Multiple formats found — pick one:');
+        const items = data.picker
+          .map((item, i) => {
+            const label = item.type === 'video'
+              ? `Video ${i + 1}${item.quality ? ' · ' + item.quality : ''}`
+              : `Audio ${i + 1}`;
+            return `<div class="picker-item">
+              <span class="picker-item-label">${escHtml(label)}</span>
+              <a class="picker-item-link" href="${escHtml(item.url)}" target="_blank" rel="noopener" download>Download</a>
+            </div>`;
+          })
+          .join('');
+        resultArea.innerHTML = `<div class="picker-list">${items}</div>`;
+      } else {
+        setStatus('error', 'Unexpected response from cobalt. Try a different quality or format.');
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus('error', 'Network error — cobalt.tools may be temporarily down. Try again in a moment.');
+    }
+
+    setLoading(false);
+  });
+
+  urlInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') downloadBtn.click();
+  });
+
+  function escHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function friendlyError(code) {
+    const map = {
+      'error.api.link.invalid':           'That URL isn\'t recognized. Make sure it\'s a valid YouTube link.',
+      'error.api.link.unsupported':       'This type of YouTube link isn\'t supported (try a regular video URL).',
+      'error.api.content.too_long':       'This video is too long to process.',
+      'error.api.content.unavailable':    'This video is unavailable or private.',
+      'error.api.content.age_restricted': 'Age-restricted videos can\'t be downloaded.',
+      'error.api.content.geoblocked':     'This video is geo-blocked in cobalt\'s region.',
+      'error.api.rate_limited':           'Too many requests — wait a moment and try again.',
+    };
+    return map[code] ?? `Download failed (${code}). Try a different quality or format.`;
+  }
+</script>
+</body>
+</html>
