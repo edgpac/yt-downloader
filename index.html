@@ -405,7 +405,7 @@
 </div>
 
 <div class="footer">
-  Powered by <a href="https://cobalt.tools" target="_blank" rel="noopener">cobalt.tools</a> · for personal use only<br>
+  Powered by <a href="https://invidious.io" target="_blank" rel="noopener">Invidious</a> · for personal use only<br>
   Respect copyright and YouTube's terms of service.
 </div>
 
@@ -491,72 +491,41 @@
     hideStatus();
     resultArea.innerHTML = '';
     setLoading(true);
-    setStatus('info', 'Contacting cobalt.tools…');
+    setStatus('info', 'Fetching video info…');
 
     const mode = modeSelect.value;
     const quality = qualitySelect.value;
 
-    const body = {
-      url: rawUrl,
-      downloadMode: mode,
-      filenameStyle: 'pretty',
-    };
-
-    if (mode !== 'audio') {
-      body.videoQuality = quality === 'max' ? '9999' : quality;
-    }
-
-    if (mode === 'audio') {
-      body.audioFormat = 'mp3';
-    }
-
     try {
-      const res = await fetch('https://api.cobalt.tools/', {
+      const res = await fetch('/api/download', {
         method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: rawUrl, quality, mode }),
       });
 
       const data = await res.json();
 
-      if (!res.ok || data.status === 'error') {
-        const code = data?.error?.code ?? 'unknown_error';
-        const friendly = friendlyError(code);
-        setStatus('error', friendly);
+      if (!res.ok || data.error) {
+        setStatus('error', data.error || 'Download failed. Try a different quality or format.');
         setLoading(false);
         return;
       }
 
-      if (data.status === 'stream' || data.status === 'tunnel' || data.status === 'redirect') {
-        setStatus('success', 'Link ready! Click below to download.');
-        const filename = data.filename ?? guessFilename(rawUrl, mode);
-        resultArea.innerHTML = `
-          <div class="result-filename">${escHtml(filename)}</div>
-          ${renderDownloadLink(data.url, 'Download file')}
-        `;
-      } else if (data.status === 'picker') {
-        setStatus('success', 'Multiple formats found — pick one:');
-        const items = data.picker
-          .map((item, i) => {
-            const label = item.type === 'video'
-              ? `Video ${i + 1}${item.quality ? ' · ' + item.quality : ''}`
-              : `Audio ${i + 1}`;
-            return `<div class="picker-item">
-              <span class="picker-item-label">${escHtml(label)}</span>
-              <a class="picker-item-link" href="${escHtml(item.url)}" target="_blank" rel="noopener" download>Download</a>
-            </div>`;
-          })
-          .join('');
-        resultArea.innerHTML = `<div class="picker-list">${items}</div>`;
-      } else {
-        setStatus('error', 'Unexpected response from cobalt. Try a different quality or format.');
-      }
+      const ext = data.ext || (mode === 'audio' ? 'm4a' : 'mp4');
+      const safeTitle = (data.title || 'video').replace(/[^a-z0-9 _\-()]/gi, '_').slice(0, 80);
+      const filename = `${safeTitle}.${ext}`;
+
+      let statusMsg = 'Link ready! Click below to download.';
+      if (data.note) statusMsg += `<br><span style="opacity:0.75;font-size:12px">${escHtml(data.note)}</span>`;
+      setStatus('success', statusMsg);
+
+      resultArea.innerHTML = `
+        <div class="result-filename">${escHtml(filename)}</div>
+        ${renderDownloadLink(data.downloadUrl, 'Download file')}
+      `;
     } catch (err) {
       console.error(err);
-      setStatus('error', 'Network error — cobalt.tools may be temporarily down. Try again in a moment.');
+      setStatus('error', 'Network error. Please try again.');
     }
 
     setLoading(false);
@@ -574,18 +543,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  function friendlyError(code) {
-    const map = {
-      'error.api.link.invalid':           'That URL isn\'t recognized. Make sure it\'s a valid YouTube link.',
-      'error.api.link.unsupported':       'This type of YouTube link isn\'t supported (try a regular video URL).',
-      'error.api.content.too_long':       'This video is too long to process.',
-      'error.api.content.unavailable':    'This video is unavailable or private.',
-      'error.api.content.age_restricted': 'Age-restricted videos can\'t be downloaded.',
-      'error.api.content.geoblocked':     'This video is geo-blocked in cobalt\'s region.',
-      'error.api.rate_limited':           'Too many requests — wait a moment and try again.',
-    };
-    return map[code] ?? `Download failed (${code}). Try a different quality or format.`;
-  }
 </script>
 </body>
 </html>
