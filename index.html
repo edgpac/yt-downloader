@@ -506,7 +506,15 @@
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        setStatus('error', data.error || 'Download failed. Try a different quality or format.');
+        if (data.botBlocked) {
+          const flag = mode === 'audio' ? '-x --audio-format mp3' : `-f "bestvideo[height<=${quality === 'max' ? '1080' : quality}][ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"`;
+          const cmd = `yt-dlp --cookies-from-browser chrome ${flag} -o "~/Downloads/%(title)s.%(ext)s" "${rawUrl}"`;
+          setStatus('error', `YouTube is blocking cloud servers. Run this in Terminal instead:`);
+          resultArea.innerHTML = `<div style="margin-top:10px;background:#1a1a26;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px 14px;font-family:monospace;font-size:12px;color:#a89cff;word-break:break-all;cursor:pointer;user-select:all" title="Click to select all">${escHtml(cmd)}</div>
+          <p style="margin-top:8px;font-size:11px;color:#6b6b85">Click the box above to select all, then copy &amp; paste into Terminal</p>`;
+        } else {
+          setStatus('error', data.error || 'Download failed. Try a different quality or format.');
+        }
         setLoading(false);
         return;
       }
